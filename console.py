@@ -1,11 +1,68 @@
 import numpy as np
 import random
 
+# Constante
 ROWS, COLS = 5, 4
 CAKE_SLICES = ["1", "2", "3", "4", "5", "6"]
+MAX_SLICES = 8
 
-def create_board():
-    return np.full((ROWS, COLS), " ", dtype=str)
+class Plate:
+    def __init__(self, slices):
+        self.slices = slices
+
+    def count_slice(self, slice_type):
+        return self.slices.count(slice_type)
+
+    def add_slices(self, slice_type, count):
+        self.slices.extend([slice_type] * count)
+
+    def remove_slices(self, slice_type, count):
+        removed = 0
+        new_slices = []
+        for s in self.slices:
+            if s == slice_type and removed < count:
+                removed += 1
+            else:
+                new_slices.append(s)
+        self.slices = new_slices
+
+    def is_clearable(self):
+        return len(self.slices) == MAX_SLICES and len(set(self.slices)) == 1
+
+    def __str__(self):
+        return "".join(self.slices)
+
+class Board:
+    def __init__(self):
+        self.grid = np.full((ROWS, COLS), " ", dtype=str)
+
+    def place_plate(self, row, col, plate_number):
+        if self.grid[row, col] != " ":
+            print("Locul este deja ocupat!")
+            return False
+        self.grid[row, col] = str(plate_number)
+        return True
+
+    def get_plate_number(self, row, col):
+        return self.grid[row, col]
+
+    def remove_plate(self, row, col):
+        self.grid[row, col] = " "
+
+    def print_board(self):
+        print("\n    1   2   3   4")
+        print("  +---+---+---+---+")
+        for row in self.grid:
+            print("  | " + " | ".join(row) + " |")
+            print("  +---+---+---+---+")
+
+    def print_plate_info(self, plate_contents):
+        print("\nFarfuriile de pe tablă:")
+        for r in range(ROWS):
+            for c in range(COLS):
+                if self.grid[r, c] != " ":
+                    plate_number = int(self.grid[r, c])
+                    print(f"Farfuria la ({r + 1}, {c + 1}): Numărul {plate_number}, Conținut: {plate_contents[plate_number]}")
 
 def generate_plate():
     total_slices = random.randint(1, 7)
@@ -25,95 +82,85 @@ def generate_plate():
         plate.extend([available_slices[i]] * distribution[i])
     
     plate.sort()
-    return plate
-
-def Alg_plasare_farfurii(board, plate, row, col, score, plate_number, plate_contents):
-    if board[row, col] != " ":
-        print("Locul este deja ocupat!")
-        return score, plate_contents
-
-    # Plasăm numărul farfuriei în matrice
-    board[row, col] = str(plate_number)
-    plate_contents[plate_number] = "".join(plate)  # Salvăm conținutul farfuriei
-    print(f"Farfurie plasată: {''.join(plate)} (Numărul: {plate_number})")  # Confirmare plasare farfurie
-
-    neighbors = []
-    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nr, nc = row + dr, col + dc
-        if 0 <= nr < ROWS and 0 <= nc < COLS and board[nr, nc] != " ":
-            neighbors.append((nr, nc, list(board[nr, nc])))
-
-    for slice_type in set(plate):
-        plate_count = plate.count(slice_type)
-
-        sorted_neighbors = sorted(neighbors, key=lambda x: x[2].count(slice_type))
-        for nr, nc, neighbor_plate in sorted_neighbors:
-            neighbor_count = neighbor_plate.count(slice_type)
-
-            if plate_count > neighbor_count:
-                transfer = min(7 - plate_count, neighbor_count)
-                if transfer > 0:
-                    new_neighbor_plate = [s for s in neighbor_plate if s != slice_type][:len(neighbor_plate) - transfer]
-                    board[nr, nc] = "".join(new_neighbor_plate)
-                    plate.extend([slice_type] * transfer)
-                    plate_count += transfer
-
-                    if plate_count == 8 and len(set(plate)) == 1:
-                        board[row, col] = " "
-                        score += 1
-                        print("Farfurie eliminată! Scor +1")
-                        return score, plate_contents
-
-    return score, plate_contents
-
-def create_plates():
-    return [generate_plate() for _ in range(3)]
-
-def print_board(board):
-    print("\n    1   2   3   4")
-    print("  +---+---+---+---+")
-    for row in board:
-        print("  | " + " | ".join(row) + " |")
-        print("  +---+---+---+---+")
-
-def print_table_plates(board, plate_contents):
-    print("\nFarfuriile de pe tablă:")
-    for r in range(ROWS):
-        for c in range(COLS):
-            if board[r, c] != " ":
-                plate_number = int(board[r, c])
-                print(f"Farfuria la ({r + 1}, {c + 1}): Numărul {plate_number}, Conținut: {plate_contents[plate_number]}")
+    return Plate(plate)
 
 def print_plates(plates):
     print("\nFarfurii disponibile:")
     for i, plate in enumerate(plates, 1):
-        print(f"{i} -> {''.join(plate)}")
+        print(f"{i} -> {plate}")
 
-def print_round_info(score, board, plate_contents):
-    print(f"\nScor: {score}")
-    print_table_plates(board, plate_contents)
+def Alg_plasare_farfurii(board, plate, row, col, score, plate_number, plate_contents):
+    if not board.place_plate(row, col, plate_number):
+        return score, plate_contents
+
+    plate_contents[plate_number] = plate  # Salvez farfuria plasată
+    print(f"Farfurie plasată: {plate} (Numărul: {plate_number})")
+
+    neighbors = []
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nr, nc = row + dr, col + dc
+        if 0 <= nr < ROWS and 0 <= nc < COLS and board.get_plate_number(nr, nc) != " ":
+            neighbor_plate_number = int(board.get_plate_number(nr, nc))
+            neighbors.append((nr, nc, plate_contents[neighbor_plate_number]))
+
+    for slice_type in set(plate.slices):
+        plate_count = plate.count_slice(slice_type)
+        for nr, nc, neighbor_plate in neighbors:
+            neighbor_count = neighbor_plate.count_slice(slice_type)
+            transfer = min(MAX_SLICES - plate_count, neighbor_count)
+            if transfer > 0:
+                neighbor_plate.remove_slices(slice_type, transfer)
+                plate.add_slices(slice_type, transfer)
+
+    # Dacă farfuria are 8 felii dar include felii de tipuri diferite
+    if len(plate.slices) == MAX_SLICES and len(set(plate.slices)) > 1:
+        # Identificăm felia dominantă
+        dominant_slice = max(set(plate.slices), key=plate.count_slice)
+
+        # Cedăm feliile inutile vecinilor
+        for useless_slice in set(plate.slices):
+            if useless_slice != dominant_slice:
+                count_to_give = plate.count_slice(useless_slice)
+                for nr, nc, neighbor_plate in neighbors:
+                    neighbor_capacity = MAX_SLICES - len(neighbor_plate.slices)
+                    transfer = min(count_to_give, neighbor_capacity)
+                    if transfer > 0:
+                        plate.remove_slices(useless_slice, transfer)
+                        neighbor_plate.add_slices(useless_slice, transfer)
+                        count_to_give -= transfer
+                        if count_to_give == 0:
+                            break
+
+    # Verificăm dacă farfuria poate fi eliminată
+    if plate.is_clearable():
+        board.remove_plate(row, col)
+        score += 1
+        print("Farfurie eliminată! Scor +1")
+        return score, plate_contents
+
+    return score, plate_contents
+
 
 def main():
-    board = create_board()
-    plates = create_plates()
+    board = Board()
+    plates = [generate_plate() for _ in range(3)]
     score = 0
-    plate_counter = 0  # Contor pentru numărul farfuriilor plasate
-    plate_contents = {}  # Dicționar pentru conținutul farfuriilor plasate
+    plate_counter = 0
+    plate_contents = {}
 
     while True:
-        # Afișăm informațiile rundei la începutul unei noi runde
-        print_round_info(score, board, plate_contents)
-        print_board(board)
+        print(f"\nScor: {score}")
+        board.print_board()
+        board.print_plate_info(plate_contents)
         print_plates(plates)
 
         if not plates:
-            plates = create_plates()
+            plates = [generate_plate() for _ in range(3)]
             print("\nNoi farfurii au fost generate!")
             print_plates(plates)
 
         try:
-            print(f"(Alege o farfurie 1 - {len(plates)})")  # Mesaj actualizat
-            choice = int(input("Alege o farfurie: ")) - 1
+            choice = int(input(f"Alege o farfurie (1-{len(plates)}): ")) - 1
             if choice not in range(len(plates)):
                 print("Alegere invalidă!")
                 continue
@@ -122,14 +169,12 @@ def main():
             col = int(input("Alege coloana (1-4): ")) - 1
 
             if 0 <= row < ROWS and 0 <= col < COLS:
-                plate_counter += 1  # Incrementăm contorul
+                plate_counter += 1
                 score, plate_contents = Alg_plasare_farfurii(board, plates.pop(choice), row, col, score, plate_counter, plate_contents)
             else:
                 print("Poziție invalidă!")
         except ValueError:
             print("Intrare invalidă! Te rog introdu numere valide.")
-
-
 
 if __name__ == "__main__":
     main()
