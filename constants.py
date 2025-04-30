@@ -1,0 +1,3 @@
+ROWS, COLS = 5, 4
+CAKE_SLICE_TYPES = ["1", "2", "3", "4", "5", "6"]
+MAX_SLICES_PER_PLATE = 6
