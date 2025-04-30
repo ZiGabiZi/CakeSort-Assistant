@@ -1,10 +1,10 @@
 import numpy as np
 import random
 
-# Constante
+# Constants
 ROWS, COLS = 5, 4
 CAKE_SLICES = ["1", "2", "3", "4", "5", "6"]
-MAX_SLICES = 8
+MAX_SLICES = 6
 
 class Plate:
     def __init__(self, slices):
@@ -38,7 +38,7 @@ class Board:
 
     def place_plate(self, row, col, plate_number):
         if self.grid[row, col] != " ":
-            print("Locul este deja ocupat!")
+            print("The spot is already taken!")
             return False
         self.grid[row, col] = str(plate_number)
         return True
@@ -57,16 +57,16 @@ class Board:
             print("  +---+---+---+---+")
 
     def print_plate_info(self, plate_contents):
-        print("\nFarfuriile de pe tablă:")
+        print("\nPlates on the board:")
         for r in range(ROWS):
             for c in range(COLS):
                 if self.grid[r, c] != " ":
                     plate_number = int(self.grid[r, c])
-                    print(f"Farfuria la ({r + 1}, {c + 1}): Numărul {plate_number}, Conținut: {plate_contents[plate_number]}")
+                    print(f"Plate at ({r + 1}, {c + 1}): Number {plate_number}, Content: {plate_contents[plate_number]}")
 
 def generate_plate():
-    total_slices = random.randint(1, 7)
-    num_types = random.randint(1, min(6, total_slices))
+    total_slices = random.randint(1, 5)
+    num_types = random.randint(1, total_slices)
     available_slices = random.sample(CAKE_SLICES, num_types)
 
     distribution = [total_slices // num_types] * num_types
@@ -85,16 +85,30 @@ def generate_plate():
     return Plate(plate)
 
 def print_plates(plates):
-    print("\nFarfurii disponibile:")
+    print("\nAvailable plates:")
     for i, plate in enumerate(plates, 1):
         print(f"{i} -> {plate}")
 
-def Alg_plasare_farfurii(board, plate, row, col, score, plate_number, plate_contents):
+def cleanup_empty_plates(board, plate_contents):
+    """
+    Elimină farfuriile care au devenit goale de pe tablă.
+    Acestea sunt setate ca " " în grilă, iar corespondența din plate_contents rămâne pentru rezervă.
+    """
+    for r in range(ROWS):
+        for c in range(COLS):
+            if board.get_plate_number(r, c) != " ":
+                plate_num = int(board.get_plate_number(r, c))
+                # Dacă farfuria este goală, elimina-o de pe tablă
+                if len(plate_contents[plate_num].slices) == 0:
+                    board.remove_plate(r, c)
+                    print(f"Plate at ({r+1}, {c+1}) is empty and removed from board.")
+
+def place_plate_algorithm(board, plate, row, col, score, plate_number, plate_contents):
     if not board.place_plate(row, col, plate_number):
         return score, plate_contents
 
-    plate_contents[plate_number] = plate  # Salvez farfuria plasată
-    print(f"Farfurie plasată: {plate} (Numărul: {plate_number})")
+    plate_contents[plate_number] = plate  # Save the placed plate
+    print(f"Plate placed: {plate} (Number: {plate_number})")
 
     neighbors = []
     for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
@@ -112,12 +126,10 @@ def Alg_plasare_farfurii(board, plate, row, col, score, plate_number, plate_cont
                 neighbor_plate.remove_slices(slice_type, transfer)
                 plate.add_slices(slice_type, transfer)
 
-    # Dacă farfuria are 8 felii dar include felii de tipuri diferite
+    # If the plate has 6 slices but includes multiple types,
+    # evolve it toward the dominant type.
     if len(plate.slices) == MAX_SLICES and len(set(plate.slices)) > 1:
-        # Identificăm felia dominantă
         dominant_slice = max(set(plate.slices), key=plate.count_slice)
-
-        # Cedăm feliile inutile vecinilor
         for useless_slice in set(plate.slices):
             if useless_slice != dominant_slice:
                 count_to_give = plate.count_slice(useless_slice)
@@ -131,15 +143,14 @@ def Alg_plasare_farfurii(board, plate, row, col, score, plate_number, plate_cont
                         if count_to_give == 0:
                             break
 
-    # Verificăm dacă farfuria poate fi eliminată
+    # Check if the plate can be cleared.
     if plate.is_clearable():
         board.remove_plate(row, col)
         score += 1
-        print("Farfurie eliminată! Scor +1")
+        print("Plate cleared! Score +1")
         return score, plate_contents
 
     return score, plate_contents
-
 
 def main():
     board = Board()
@@ -149,32 +160,40 @@ def main():
     plate_contents = {}
 
     while True:
-        print(f"\nScor: {score}")
+        print(f"\nScore: {score}")
         board.print_board()
         board.print_plate_info(plate_contents)
         print_plates(plates)
 
+        # Curățăm farfuriile goale, dacă există
+        cleanup_empty_plates(board, plate_contents)
+
         if not plates:
             plates = [generate_plate() for _ in range(3)]
-            print("\nNoi farfurii au fost generate!")
+            print("\nNew plates have been generated!")
             print_plates(plates)
 
         try:
-            choice = int(input(f"Alege o farfurie (1-{len(plates)}): ")) - 1
+            choice = int(input(f"Choose a plate (1-{len(plates)}): ")) - 1
             if choice not in range(len(plates)):
-                print("Alegere invalidă!")
+                print("Invalid choice!")
                 continue
 
-            row = int(input("Alege rândul (1-5): ")) - 1
-            col = int(input("Alege coloana (1-4): ")) - 1
+            row = int(input("Choose row (1-5): ")) - 1
+            col = int(input("Choose column (1-4): ")) - 1
 
             if 0 <= row < ROWS and 0 <= col < COLS:
+                if board.get_plate_number(row, col) != " ":
+                    print("The spot is already taken!")
+                    continue
                 plate_counter += 1
-                score, plate_contents = Alg_plasare_farfurii(board, plates.pop(choice), row, col, score, plate_counter, plate_contents)
+                score, plate_contents = place_plate_algorithm(
+                    board, plates.pop(choice), row, col, score, plate_counter, plate_contents
+                )
             else:
-                print("Poziție invalidă!")
+                print("Invalid position!")
         except ValueError:
-            print("Intrare invalidă! Te rog introdu numere valide.")
+            print("Invalid input! Please enter valid numbers.")
 
 if __name__ == "__main__":
     main()
