@@ -87,13 +87,15 @@ class CakeSortGame:
                     neighbor_plates.append((neighbor_row, neighbor_col, neighbor_plate))
 
         for slice_type in set(current_plate.slices):
-            current_plate_slice_count = current_plate.count_slice(slice_type)
             for neighbor_row, neighbor_col, neighbor_plate in neighbor_plates:
+                capacity_left = MAX_SLICES_PER_PLATE - len(current_plate.slices)
+                if capacity_left == 0:
+                    break
                 neighbor_slice_count = neighbor_plate.count_slice(slice_type)
-                transferable_slices = min(MAX_SLICES_PER_PLATE - current_plate_slice_count, neighbor_slice_count)
-                if transferable_slices > 0:
-                    neighbor_plate.remove_slices(slice_type, transferable_slices)
-                    current_plate.add_slices(slice_type, transferable_slices)
+                transferable = min(capacity_left, neighbor_slice_count)
+                if transferable > 0:
+                    neighbor_plate.remove_slices(slice_type, transferable)
+                    current_plate.add_slices(slice_type, transferable)
 
         if len(current_plate.slices) == MAX_SLICES_PER_PLATE and len(set(current_plate.slices)) > 1:
             dominant_slice_type = max(set(current_plate.slices), key=current_plate.count_slice)
