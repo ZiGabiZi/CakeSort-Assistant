@@ -8,7 +8,10 @@ class Plate:
         return self.slices.count(slice_type)
 
     def add_slices(self, slice_type, number_of_slices):
-        self.slices.extend([slice_type] * number_of_slices)
+        space_left = MAX_SLICES_PER_PLATE - len(self.slices)
+        actual_added = min(space_left, number_of_slices)
+        self.slices.extend([slice_type] * actual_added)
+        return actual_added
 
     def remove_slices(self, slice_type, number_to_remove):
         removed_count = 0
