@@ -72,47 +72,35 @@ class CakeSortGame:
         self._process_plate_after_placement(row_index, column_index, self.plate_counter)
         return True
 
-    def _process_plate_after_placement(self, row_index, column_index, plate_number):
-        current_plate = self.plate_contents_by_number[plate_number]
-        print(f"Plate placed: {current_plate} (Number: {plate_number})")
+    def _process_plate_after_placement(self, row, col, plate_number):
+        current = self.plate_contents_by_number[plate_number]
 
-        neighbor_plates = []
-        for row_delta, col_delta in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            neighbor_row = row_index + row_delta
-            neighbor_col = column_index + col_delta
-            if 0 <= neighbor_row < ROWS and 0 <= neighbor_col < COLS:
-                neighbor_plate_number = self.board.get_plate_number(neighbor_row, neighbor_col)
-                if neighbor_plate_number != 0:
-                    neighbor_plate = self.plate_contents_by_number[neighbor_plate_number]
-                    neighbor_plates.append((neighbor_row, neighbor_col, neighbor_plate))
+        neighbors = []
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            r, c = row+dr, col+dc
+            if 0 <= r < ROWS and 0 <= c < COLS:
+                pn = self.board.get_plate_number(r, c)
+                if pn:
+                    neighbors.append(self.plate_contents_by_number[pn])
 
-        for slice_type in set(current_plate.slices):
-            for neighbor_row, neighbor_col, neighbor_plate in neighbor_plates:
-                capacity_left = MAX_SLICES_PER_PLATE - len(current_plate.slices)
-                if capacity_left == 0:
-                    break
-                neighbor_slice_count = neighbor_plate.count_slice(slice_type)
-                transferable = min(capacity_left, neighbor_slice_count)
-                if transferable > 0:
-                    neighbor_plate.remove_slices(slice_type, transferable)
-                    current_plate.add_slices(slice_type, transferable)
+        for neighbor in neighbors:
+            common_types = set(current.slices) & set(neighbor.slices)
+            for slice_type in common_types:
+                cnt_cur = current.count_slice(slice_type)
+                cnt_nb  = neighbor.count_slice(slice_type)
+                total   = cnt_cur + cnt_nb
+                current.remove_slices(slice_type, cnt_cur)
+                neighbor.remove_slices(slice_type, cnt_nb)
 
-        if len(current_plate.slices) == MAX_SLICES_PER_PLATE and len(set(current_plate.slices)) > 1:
-            dominant_slice_type = max(set(current_plate.slices), key=current_plate.count_slice)
-            for slice_type in set(current_plate.slices):
-                if slice_type != dominant_slice_type:
-                    count_to_transfer = current_plate.count_slice(slice_type)
-                    for neighbor_row, neighbor_col, neighbor_plate in neighbor_plates:
-                        neighbor_capacity = MAX_SLICES_PER_PLATE - len(neighbor_plate.slices)
-                        actual_transfer = min(count_to_transfer, neighbor_capacity)
-                        if actual_transfer > 0:
-                            current_plate.remove_slices(slice_type, actual_transfer)
-                            neighbor_plate.add_slices(slice_type, actual_transfer)
-                            count_to_transfer -= actual_transfer
-                            if count_to_transfer == 0:
-                                break
+                if total > MAX_SLICES_PER_PLATE:
+                    remaining = total - MAX_SLICES_PER_PLATE
+                else:
+                    remaining = total
 
-        if current_plate.is_clearable():
-            self.board.remove_plate(row_index, column_index)
-            self.score += 1
-            print("Plate cleared! Score +1")
+                if remaining > 0:
+                    current.add_slices(slice_type, remaining)
+
+                if current.is_clearable():
+                    self.board.remove_plate(row, col)
+                    self.score += 1
+                    return
