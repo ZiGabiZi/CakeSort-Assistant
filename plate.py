@@ -22,6 +22,7 @@ class Plate:
             else:
                 remaining_slices.append(current_slice)
         self.slices = remaining_slices
+        return removed_count
 
     def is_clearable(self):
         return len(self.slices) == MAX_SLICES_PER_PLATE and len(set(self.slices)) == 1
