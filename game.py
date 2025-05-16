@@ -1,6 +1,5 @@
-import random
 import numpy as np
-from constants import CAKE_SLICE_TYPES, ROWS, COLS, MAX_SLICES_PER_PLATE
+from constants import *
 from plate import Plate
 from board import Board
 

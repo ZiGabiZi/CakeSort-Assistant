@@ -8,6 +8,9 @@ class Plate:
     def __init__(self, slice_list: np.array):
         self.slices = slice_list
 
+    def set_plate(self, slices: np.array):
+        self.slices = slices
+
     def count_slice(self, slice_type) -> int:
         return Counter(self.slices)[slice_type]
 
