@@ -1,9 +1,10 @@
 from game import CakeSortGame
 from consoleview import ConsoleView
 
+from sys import argv
+
 def main():
-    mode = input("Type 'gui' for graphical mode or press Enter for console mode: ").strip().lower()
-    if mode == "gui":
+    if len(argv) < 2:
         import tkinter as tk
         from gui import CakeSortGUI
         root = tk.Tk()

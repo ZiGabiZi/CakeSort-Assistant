@@ -7,34 +7,14 @@ from board import Board
 class CakeSortGame:
     def __init__(self):
         self.board = Board()
-        self.plates = [self.generate_plate() for _ in range(3)]
+        self.plates = [Plate.generate_plate() for _ in range(3)]
         self.score = 0
         self.plate_counter = 0
         self.plate_contents_by_number = {}
 
-    @staticmethod
-    def generate_plate():
-        total_slices = random.randint(1, 5)
-        number_of_slice_types = random.randint(1, total_slices)
-        chosen_slice_types = random.sample(CAKE_SLICE_TYPES, number_of_slice_types)
-
-        slice_distribution = [total_slices // number_of_slice_types] * number_of_slice_types
-        remaining_slices = total_slices % number_of_slice_types
-
-        while remaining_slices > 0:
-            random_index = random.randint(0, number_of_slice_types - 1)
-            slice_distribution[random_index] += 1
-            remaining_slices -= 1
-
-        generated_slices = []
-        for index in range(number_of_slice_types):
-            generated_slices.extend([chosen_slice_types[index]] * slice_distribution[index])
-        generated_slices.sort()
-        return Plate(generated_slices)
-
     def refresh_plates(self):
         self.plates.clear()
-        self.plates = [self.generate_plate() for _ in range(3)]
+        self.plates = [Plate.generate_plate() for _ in range(3)]
 
     def cleanup_empty_plates(self):
         plate_numbers_to_remove = []

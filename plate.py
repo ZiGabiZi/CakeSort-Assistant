@@ -1,31 +1,49 @@
-from constants import MAX_SLICES_PER_PLATE
+from constants import *
+
+from collections import Counter
+
+import numpy as np
 
 class Plate:
-    def __init__(self, slice_list):
+    def __init__(self, slice_list: np.array):
         self.slices = slice_list
 
-    def count_slice(self, slice_type):
-        return self.slices.count(slice_type)
+    def count_slice(self, slice_type) -> int:
+        return Counter(self.slices)[slice_type]
 
-    def add_slices(self, slice_type, number_of_slices):
+    def add_slices(self, slice_type: int, number_of_slices: int) -> int:
         space_left = MAX_SLICES_PER_PLATE - len(self.slices)
         actual_added = min(space_left, number_of_slices)
-        self.slices.extend([slice_type] * actual_added)
+        self.slices = np.sort(np.concatenate((self.slices,[slice_type] * actual_added)))
         return actual_added
 
-    def remove_slices(self, slice_type, number_to_remove):
-        removed_count = 0
-        remaining_slices = []
-        for current_slice in self.slices:
-            if current_slice == slice_type and removed_count < number_to_remove:
-                removed_count += 1
-            else:
-                remaining_slices.append(current_slice)
-        self.slices = remaining_slices
+    def remove_slices(self, slice_type: int , no_removes: int) -> int:
+        removed_count = min(self.count_slice(slice_type),no_removes)
+        indexes = np.where(self.slices == slice_type)[0]
+        self.slices = np.delete(self.slices,indexes[:removed_count])
+
         return removed_count
 
-    def is_clearable(self):
+    def is_clearable(self) -> bool:
         return len(self.slices) == MAX_SLICES_PER_PLATE and len(set(self.slices)) == 1
 
     def __str__(self):
-        return "".join(self.slices)
+        return "".join(map(str,self.slices))
+    
+    @staticmethod
+    def generate_plate():
+        total_slices = np.random.randint(1, MAX_SLICES_PER_PLATE - 1)
+        number_of_slice_types = np.random.randint(1, total_slices + 1)
+        chosen_slice_types = np.random.choice(CAKE_SLICE_TYPES, size=number_of_slice_types, replace=False)
+
+        base_distribution = np.full(number_of_slice_types, total_slices // number_of_slice_types)
+        remaining = total_slices % number_of_slice_types
+
+        if remaining > 0:
+            indices = np.random.choice(number_of_slice_types, size=remaining, replace=False)
+            base_distribution[indices] += 1
+
+        generated_slices = np.repeat(chosen_slice_types, base_distribution)
+        generated_slices.sort()
+
+        return Plate(generated_slices)
