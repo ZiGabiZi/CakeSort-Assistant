@@ -13,14 +13,19 @@ class ConsoleView:
 
     def _print_board(self):
         print("\n    1   2   3   4")
-        print("  +---+---+---+---+")
+        print("  +-----+-----+-----+-----+")
         for row_index in range(ROWS):
             row_display = []
             for column_index in range(COLS):
                 plate_number = self.game.board.get_plate_number(row_index, column_index)
-                row_display.append(str(plate_number))
-            print(f"  | {' | '.join(row_display)} |")
-            print("  +---+---+---+---+")
+                if plate_number != 0:
+                    plate = self.game.plate_contents_by_number[plate_number]
+                    cell = str(plate)[:5].ljust(5)
+                else:
+                    cell = "     "
+                row_display.append(cell)
+            print(f"{row_index + 1} |" + "|".join(row_display) + "|")
+            print("  +-----+-----+-----+-----+")
 
     def _print_plate_info(self):
         print("\nPlates on the board:")

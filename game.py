@@ -33,11 +33,12 @@ class CakeSortGame:
         return Plate(generated_slices)
 
     def refresh_plates(self):
-        if not self.plates:
-            self.plates = [self.generate_plate() for _ in range(3)]
+        self.plates.clear()
+        self.plates = [self.generate_plate() for _ in range(3)]
 
     def cleanup_empty_plates(self):
         plate_numbers_to_remove = []
+        cleared_positions = []
         for row_index in range(ROWS):
             for column_index in range(COLS):
                 plate_number = self.board.get_plate_number(row_index, column_index)
@@ -46,9 +47,11 @@ class CakeSortGame:
                     if plate and len(plate.slices) == 0:
                         self.board.remove_plate(row_index, column_index)
                         plate_numbers_to_remove.append(plate_number)
+                        cleared_positions.append((row_index, column_index))
                         print(f"Plate at ({row_index + 1}, {column_index + 1}) is empty and removed from board.")
         for plate_number in plate_numbers_to_remove:
             del self.plate_contents_by_number[plate_number]
+        return cleared_positions
 
     def place_plate(self, plate_index, row_index, column_index):
         if plate_index < 0 or plate_index >= len(self.plates):
