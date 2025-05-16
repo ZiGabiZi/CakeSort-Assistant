@@ -35,11 +35,11 @@ class CakeSortGame:
 
     def place_plate(self, plate_index, row_index, column_index):
         if plate_index < 0 or plate_index >= len(self.plates):
-            return False
+            return False, []
         if not (0 <= row_index < ROWS and 0 <= column_index < COLS):
-            return False
+            return False, []
         if self.board.get_plate_number(row_index, column_index) != 0:
-            return False
+            return False, []
 
         self.plate_counter += 1
         selected_plate = self.plates.pop(plate_index)
@@ -49,41 +49,42 @@ class CakeSortGame:
 
         if not self.board.place_plate(row_index, column_index, self.plate_counter, plate_slices_array):
             self.plates.insert(plate_index, selected_plate)
-            return False
+            return False, []
 
         self.plate_contents_by_number[self.plate_counter] = selected_plate
-        self._process_plate_after_placement(row_index, column_index, self.plate_counter)
-        return True
+        moves = self._process_plate_after_placement(row_index, column_index, self.plate_counter)
+        return True, moves
 
     def _process_plate_after_placement(self, row, col, plate_number):
         current = self.plate_contents_by_number[plate_number]
-
+        moves = []
         neighbors = []
         for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
             r, c = row+dr, col+dc
             if 0 <= r < ROWS and 0 <= c < COLS:
                 pn = self.board.get_plate_number(r, c)
                 if pn:
-                    neighbors.append(self.plate_contents_by_number[pn])
+                    neighbors.append((r, c, self.plate_contents_by_number[pn]))
 
-        for neighbor in neighbors:
+        for nr, nc, neighbor in neighbors:
             common_types = set(current.slices) & set(neighbor.slices)
             for slice_type in common_types:
                 cnt_cur = current.count_slice(slice_type)
                 cnt_nb  = neighbor.count_slice(slice_type)
                 total   = cnt_cur + cnt_nb
+                # Înregistrează mutarea pentru animație
+                if cnt_nb > 0:
+                    moves.append((nr, nc, row, col, slice_type, cnt_nb))
                 current.remove_slices(slice_type, cnt_cur)
                 neighbor.remove_slices(slice_type, cnt_nb)
-
                 if total > MAX_SLICES_PER_PLATE:
                     remaining = total - MAX_SLICES_PER_PLATE
                 else:
                     remaining = total
-
                 if remaining > 0:
                     current.add_slices(slice_type, remaining)
-
                 if current.is_clearable():
                     self.board.remove_plate(row, col)
                     self.score += 1
-                    return
+                    return moves
+        return moves
