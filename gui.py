@@ -62,7 +62,7 @@ class CakeSortGUI:
             widget.destroy()
         self.plate_canvases = []
         self.plate_buttons = []
-        for idx, plate in enumerate(self.game.plates):
+        for idx, plate in enumerate(self.game.current_plates):
             frame = tk.Frame(self.plates_frame)
             frame.grid(row=0, column=idx, padx=5)
             canvas = draw_plate_canvas(frame, plate)
@@ -85,7 +85,7 @@ class CakeSortGUI:
             messagebox.showerror("Error", "Spot already taken!")
             return
 
-        selected_plate = self.game.plates[self.selected_plate_index]
+        selected_plate = self.game.current_plates[self.selected_plate_index]
         result = self.game.place_plate(self.selected_plate_index, row, col)
         if isinstance(result, tuple):
             success, moves = result
@@ -108,8 +108,8 @@ class CakeSortGUI:
 
     def update_gui(self):
         cleared_positions = self.game.cleanup_empty_plates()
-        if not self.game.plates:
-            self.game.refresh_plates()
+        if not self.game.current_plates:
+            self.game.reset_plates()
         self.score_label.config(text=f"Score: {self.game.score}")
         for r in range(ROWS):
             for c in range(COLS):
@@ -117,7 +117,7 @@ class CakeSortGUI:
                 canvas.delete("all")
                 plate_number = self.game.board.get_plate_number(r, c)
                 if plate_number != 0:
-                    plate = self.game.plate_contents_by_number.get(plate_number)
+                    plate = self.game.placed_plates.get(plate_number)
                     if plate:
                         angle_per_slice = 360 / MAX_SLICES_PER_PLATE
                         start_angle = 0
@@ -186,7 +186,7 @@ class CakeSortGUI:
             for col in range(COLS):
                 plate_number = self.game.board.get_plate_number(row, col)
                 if plate_number != 0:
-                    plate = self.game.plate_contents_by_number.get(plate_number)
+                    plate = self.game.placed_plates.get(plate_number)
                     print(f"At ({row},{col}): Plate #{plate_number} -> {plate}")
 
 if __name__ == "__main__":

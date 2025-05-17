@@ -8,10 +8,10 @@ class Board:
         self.grid = [[Plate([])] * COLS for _ in range(ROWS)]
         self.plate_number_map = np.zeros((ROWS, COLS), dtype=int)
 
-    def place_plate(self, row: int, column: int, plate_number: int, plate: np.array) -> bool:
-        if not self.plate_number_map[row, column]:
+    def place_plate(self, row: int, column: int, plate_number: int, plate: Plate) -> bool:
+        if self.plate_number_map[row, column]:
             return False
-        self.grid[row][column] = Plate(plate)
+        self.grid[row][column] = plate
         self.plate_number_map[row, column] = plate_number
         return True
 
@@ -24,3 +24,16 @@ class Board:
     def remove_plate(self, row: int, column: int):
         self.grid[row][column] = Plate([])
         self.plate_number_map[row, column] = 0
+    
+    @staticmethod
+    def get_neighbors_indexes(row: int, column: int) -> list[tuple[int,int]]:
+        neighbors = []
+        if row > 0:
+            neighbors.append((row - 1, column))
+        if row < ROWS - 1:
+            neighbors.append((row + 1, column))
+        if column > 0:
+            neighbors.append((row, column - 1))
+        if column < COLS - 1:
+            neighbors.append((row, column + 1))
+        return neighbors

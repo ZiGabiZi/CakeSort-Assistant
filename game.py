@@ -6,14 +6,13 @@ from board import Board
 class CakeSortGame:
     def __init__(self):
         self.board = Board()
-        self.plates = [Plate.generate_plate() for _ in range(3)]
+        self.current_plates = [Plate.generate_plate() for _ in range(3)]
         self.score = 0
-        self.plate_counter = 0
-        self.plate_contents_by_number = {}
+        self.plate_counter = 1
+        self.placed_plates = {}
 
-    def refresh_plates(self):
-        self.plates.clear()
-        self.plates = [Plate.generate_plate() for _ in range(3)]
+    def reset_plates(self):
+        self.current_plates = [Plate.generate_plate() for _ in range(3)]
 
     def cleanup_empty_plates(self):
         plate_numbers_to_remove = []
@@ -22,40 +21,37 @@ class CakeSortGame:
             for column_index in range(COLS):
                 plate_number = self.board.get_plate_number(row_index, column_index)
                 if plate_number != 0:
-                    plate = self.plate_contents_by_number.get(plate_number)
+                    plate = self.placed_plates.get(plate_number)
                     if plate and len(plate.slices) == 0:
                         self.board.remove_plate(row_index, column_index)
                         plate_numbers_to_remove.append(plate_number)
                         cleared_positions.append((row_index, column_index))
                         print(f"Plate at ({row_index + 1}, {column_index + 1}) is empty and removed from board.")
         for plate_number in plate_numbers_to_remove:
-            del self.plate_contents_by_number[plate_number]
+            del self.placed_plates[plate_number]
         return cleared_positions
 
     def place_plate(self, plate_index, row_index, column_index):
-        if plate_index < 0 or plate_index >= len(self.plates):
+        if plate_index < 0 or plate_index >= len(self.current_plates):
             return False, []
         if not (0 <= row_index < ROWS and 0 <= column_index < COLS):
             return False, []
         if self.board.get_plate_number(row_index, column_index) != 0:
             return False, []
 
-        self.plate_counter += 1
-        selected_plate = self.plates.pop(plate_index)
-        plate_slices_array = np.zeros(MAX_SLICES_PER_PLATE, dtype=int)
-        for i, slice_value in enumerate(selected_plate.slices):
-            plate_slices_array[i] = int(slice_value)
+        selected_plate = self.current_plates.pop(plate_index)
 
-        if not self.board.place_plate(row_index, column_index, self.plate_counter, plate_slices_array):
-            self.plates.insert(plate_index, selected_plate)
+        if not self.board.place_plate(row_index, column_index, self.plate_counter, selected_plate):
+            self.current_plates.insert(plate_index, selected_plate)
             return False, []
 
-        self.plate_contents_by_number[self.plate_counter] = selected_plate
+        self.placed_plates[self.plate_counter] = selected_plate
         moves = self._process_plate_after_placement(row_index, column_index, self.plate_counter)
+        self.plate_counter += 1
         return True, moves
 
     def _process_plate_after_placement(self, row, col, plate_number):
-        current = self.plate_contents_by_number[plate_number]
+        current = self.placed_plates[plate_number]
         moves = []
         neighbors = []
         for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
@@ -63,7 +59,7 @@ class CakeSortGame:
             if 0 <= r < ROWS and 0 <= c < COLS:
                 pn = self.board.get_plate_number(r, c)
                 if pn:
-                    neighbors.append((r, c, self.plate_contents_by_number[pn]))
+                    neighbors.append((r, c, self.placed_plates[pn]))
 
         for nr, nc, neighbor in neighbors:
             common_types = set(current.slices) & set(neighbor.slices)
