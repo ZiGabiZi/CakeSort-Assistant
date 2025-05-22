@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from constants import *
 
 from collections import Counter
@@ -5,14 +7,11 @@ from collections import Counter
 import numpy as np
 
 class Plate:
-    def __init__(self, slice_list: np.array):
-        self.slices = slice_list
+    def __init__(self, slices: np.array):
+        self.slices = slices
 
     def set_plate(self, slices: np.array):
         self.slices = slices
-
-    def count_slice(self, slice_type) -> int:
-        return Counter(self.slices)[slice_type]
 
     def add_slices(self, slice_type: int, number_of_slices: int) -> int:
         space_left = MAX_SLICES_PER_PLATE - len(self.slices)
@@ -26,12 +25,28 @@ class Plate:
         self.slices = np.delete(self.slices,indexes[:removed_count])
 
         return removed_count
+    
+    def count_slice(self, slice_type) -> int:
+        return Counter(self.slices)[slice_type]
 
+    @property
+    def slices_types(self) -> int:
+        return len(Counter(self.slices))
+    
+    @property
+    def empty_spaces(self) -> int:
+        return MAX_SLICES_PER_PLATE - len(self.slices)
+
+    @property
     def is_clearable(self) -> bool:
-        return len(self.slices) == MAX_SLICES_PER_PLATE and len(set(self.slices)) == 1
+        return len(self.slices) == MAX_SLICES_PER_PLATE and self.slices_types == 1
+
+    def __and__(self, other: Plate) -> int | None:
+        common = np.intersect1d(self.slices, other.slices, assume_unique=False)
+        return common[0] if common.size > 0 else None
 
     def __str__(self):
-        return "".join(map(str,self.slices))
+        return "".join(map(lambda x: str(int(x)),self.slices))
     
     @staticmethod
     def generate_plate():

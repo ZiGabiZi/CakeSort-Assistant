@@ -5,7 +5,7 @@ import numpy as np
 
 class Board:
     def __init__(self):
-        self.grid = [[Plate([])] * COLS for _ in range(ROWS)]
+        self.grid = [[Plate(np.array([]))] * COLS for _ in range(ROWS)]
         self.plate_number_map = np.zeros((ROWS, COLS), dtype=int)
 
     def place_plate(self, row: int, column: int, plate_number: int, plate: Plate) -> bool:
@@ -18,11 +18,11 @@ class Board:
     def get_plate_number(self, row: int, column: int) -> int:
         return self.plate_number_map[row, column]
 
-    def get_plate_slices(self, row: int, column: int) -> Plate:
+    def get_plate(self, row: int, column: int) -> Plate:
         return self.grid[row][column]
 
     def remove_plate(self, row: int, column: int):
-        self.grid[row][column] = Plate([])
+        self.grid[row][column] = Plate(np.array([]))
         self.plate_number_map[row, column] = 0
     
     @staticmethod

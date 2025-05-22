@@ -98,9 +98,16 @@ class CakeSortGUI:
         self.animate_slice_move(-1, -1, row, col, selected_plate.slices[0], speedup=3)
 
         # Animatie pentru fiecare felie mutată între plates
-        for src_r, src_c, dst_r, dst_c, slice_type, count in moves:
-            for _ in range(count):
-                self.animate_slice_move(src_r, src_c, dst_r, dst_c, slice_type, speedup=3)
+        for move in moves:
+            for _ in range(move["count"]):
+                self.animate_slice_move(
+                    move["source_row"],
+                    move["source_column"],
+                    move["destination_row"],
+                    move["destination_column"], 
+                    move["slice_type"],
+                    speedup=3
+                )
 
         self.selected_plate_index = None
         self.update_gui()
