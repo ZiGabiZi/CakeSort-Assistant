@@ -19,7 +19,6 @@ class CakeSortGame:
         self.current_plates = [Plate.generate_plate() for _ in range(3)]
 
     def cleanup_empty_plates(self):
-        plate_numbers_to_remove = []
         cleared_positions = []
         for row, column in product(range(ROWS),range(COLS)):
             plate_number = self.board.get_plate_number(row, column)
@@ -27,11 +26,10 @@ class CakeSortGame:
                 plate = self.placed_plates[plate_number]
                 if plate.is_clearable:
                     self.board.remove_plate(row, column)
-                    plate_numbers_to_remove.append(plate_number)
+                    del self.placed_plates[plate_number]
                     cleared_positions.append((row, column))
                     print(f"Plate at ({row + 1}, {column + 1}) is empty and removed from board.")
-        for plate_number in plate_numbers_to_remove:
-            del self.placed_plates[plate_number]
+
         return cleared_positions
 
     def place_plate(self, plate_index, row_index, column_index):
