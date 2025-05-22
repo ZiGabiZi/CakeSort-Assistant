@@ -95,7 +95,12 @@ class CakeSortGUI:
             messagebox.showerror("Error", "Invalid move!")
             return
 
-        self.animate_slice_move(-1, -1, row, col, selected_plate.slices[0], speedup=3)
+        # Pentru Costin:
+        # Această secțiune animă vizual "zborul" primei felii de pe farfuria selectată (din zona de jos)
+        # către poziția de pe tablă unde este plasată farfuria nouă.
+        # Dacă farfuria selectată nu mai are felii (ex: după clear), animația nu se mai face.
+        if selected_plate.slices.size > 0:
+            self.animate_slice_move(-1, -1, row, col, selected_plate.slices[0], speedup=3)
 
         # Animatie pentru fiecare felie mutată între plates
         for move in moves:
