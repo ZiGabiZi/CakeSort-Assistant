@@ -39,14 +39,10 @@ class Plate:
 
     @property
     def is_clearable(self) -> bool:
-        # Pentru Costin:
-        # Returnează True dacă farfuria are exact 6 felii și toate sunt de același tip (regula CakeSort)
         return len(self.slices) == MAX_SLICES_PER_PLATE and self.slices_types == 1
 
     @property
     def is_empty(self) -> bool:
-        # Pentru Costin:
-        # Returnează True dacă farfuria nu mai are nicio felie (pentru cleanup pe tablă)
         return len(self.slices) == 0
 
     def __and__(self, other: Plate) -> int | None:

@@ -53,26 +53,27 @@ class CakeSortGame:
     def __process_new_plate(self, row, column, plate_number):
         plate = self.board.get_plate(row, column)
         moves = []
-        # Pentru Costin:
-        # Mută felii de la vecini spre farfuria NOUĂ (regula CakeSort corectă)
-        for neighbor_row, neighbor_column in self.board.get_neighbors_indexes(row, column):
-            neighbor = self.board.get_plate(neighbor_row, neighbor_column)
-            common_types = np.intersect1d(plate.slices, neighbor.slices)
-            for slice_type in common_types:
-                need = plate.empty_spaces
-                available = neighbor.count_slice(slice_type)
-                to_move = min(need, available)
-                if to_move > 0:
-                    neighbor.remove_slices(slice_type, to_move)
-                    plate.add_slices(slice_type, to_move)
-                    moves.append(create_move(
-                        neighbor_row, neighbor_column, row, column, slice_type, to_move
-                    ))
-        # Pentru Costin:
-        # Clear dacă farfuria NOUĂ are 6 felii identice (regula CakeSort)
-        if plate.is_clearable:
-            plate.slices = np.array([], dtype=int)
-            self.board.remove_plate(row, column)
-            del self.placed_plates[plate_number]
-            self.score += 1
+        for neighbor_row, neighbor_column in self.board.get_neighbors_indexes(row,column):
+            neighbor = self.board.get_plate(neighbor_row,neighbor_column)
+            slice_type = neighbor & plate
+            if not slice_type:
+                continue
+            else:
+                print(slice_type)
+            if neighbor.slices_types == 1 and plate.slices_types != 1:
+                count = min(neighbor.empty_spaces,plate.count_slice(slice_type))
+                neighbor.add_slices(slice_type,count)
+                plate.remove_slices(slice_type,count)
+                moves.append(create_move(
+                    row,column,neighbor_row,neighbor_column,slice_type,count
+                ))
+                
+            else:
+                count = min(plate.empty_spaces,neighbor.count_slice(slice_type))
+                neighbor.remove_slices(slice_type,count)
+                plate.add_slices(slice_type,count)
+                moves.append(create_move(
+                    neighbor_row,neighbor_column,row,column,slice_type,count
+                ))
+
         return moves
