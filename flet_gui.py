@@ -75,7 +75,7 @@ def main(page: ft.Page):
                 plate_number = game.board.get_plate_number(r, c)
                 if plate_number:
                     plate = game.placed_plates[plate_number]
-                    label = draw_plate_flet(plate, size=120)  # sau 110, 130, după gust
+                    label = draw_plate_flet(plate, size=100)  
                 else:
                     label = ft.Container(width=120, height=120, bgcolor="#eee", border_radius=60)
                 row_controls.append(
@@ -102,7 +102,7 @@ def main(page: ft.Page):
         for idx, plate in enumerate(game.current_plates):
             plates_row.controls.append(
                 ft.Container(
-                    content=draw_plate_flet(plate, size=90),  # sau 100
+                    content=draw_plate_flet(plate, size=100),  
                     width=94,
                     height=94,
                     border=ft.border.all(3, "blue" if idx == selected_plate_index[0] else "grey"),
@@ -155,6 +155,7 @@ def main(page: ft.Page):
             plates_row
         ])
     )
+
 
     def cleanup_empty_plates(self):
         for row in range(ROWS):
