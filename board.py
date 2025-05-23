@@ -21,9 +21,9 @@ class Board:
     def get_plate(self, row: int, column: int) -> Plate:
         return self.grid[row][column]
 
-    def remove_plate(self, row: int, column: int):
-        self.grid[row][column] = Plate(np.array([]))
-        self.plate_number_map[row, column] = 0
+    def remove_plate(self, row, col):
+        self.grid[row][col] = Plate(np.array([]))  # sau None, dacă folosești None pentru slot gol
+        self.plate_number_map[row, col] = 0
     
     @staticmethod
     def get_neighbors_indexes(row: int, column: int) -> list[tuple[int,int]]:

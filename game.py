@@ -29,13 +29,11 @@ class CakeSortGame:
                     del self.placed_plates[plate_number]
                     cleared_positions.append((row, column))
                     print(f"Plate at ({row + 1}, {column + 1}) is empty and removed from board.")
-
                 if plate.is_clearable:
                     plate.slices = np.array([], dtype=int)
                     self.board.remove_plate(row, column)
                     del self.placed_plates[plate_number]
                     self.score += 1
-
         return cleared_positions
 
     def place_plate(self, plate_index, row_index, column_index):
