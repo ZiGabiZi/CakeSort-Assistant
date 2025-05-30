@@ -1,4 +1,4 @@
-import math
+import pickle
 import io
 import base64
 from PIL import Image, ImageDraw
@@ -240,11 +240,33 @@ def main(page: ft.Page):
         update_plates()
         page.add(
             ft.Column([
-                score_text,
+                score_row,
                 board_column,
+                ft.Container(height=page.height * 0.05),
                 plates_row
-            ])
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER
+            )
         )
+
+    def save_game(e):
+        with open("cakesort_save.pkl", "wb") as f:
+            pickle.dump(game, f)
+
+    def load_game(e):
+        try:
+            with open("cakesort_save.pkl", "rb") as f:
+                loaded_game = pickle.load(f)
+                game.__dict__.update(loaded_game.__dict__)
+                update_board()
+                update_plates()
+        except Exception as ex:
+            print("Eroare la load:", ex)
+
+    save_button = ft.ElevatedButton("Save", on_click=save_game)
+    load_button = ft.ElevatedButton("Load", on_click=load_game)
+    score_row = ft.Row([save_button, load_button, score_text], alignment=ft.MainAxisAlignment.START)
 
     update_board()
     update_plates()
@@ -255,9 +277,9 @@ def main(page: ft.Page):
     overlay = ft.Stack([
         ft.Row([
             ft.Column([
-                score_text,
+                score_row,
                 board_column,
-                ft.Container(height=page.height * 0.05),  # spațiu vertical între board și plates_row
+                ft.Container(height=page.height * 0.05),  
                 plates_row
             ],
             alignment=ft.MainAxisAlignment.CENTER,
