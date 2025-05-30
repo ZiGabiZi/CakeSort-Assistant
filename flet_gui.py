@@ -53,7 +53,25 @@ def draw_plate_flet(plate, size=60):
     data = base64.b64encode(buf.getvalue()).decode()
     return ft.Image(src_base64=data, width=size, height=size)
 
+BOARD_HEIGHT_RATIO = 0.7
+
 def main(page: ft.Page):
+    page.window_full_screen = True
+    page.window_frameless = True
+
+    CELL_MARGIN = 10
+
+    def get_cell_size():
+        # Calculează dimensiunea maximă pentru celule, ținând cont de ROWS, COLS și margin
+        w = (page.width - (COLS + 1) * CELL_MARGIN) // COLS
+        h = (page.height * BOARD_HEIGHT_RATIO - (ROWS + 1) * CELL_MARGIN) // ROWS
+        return int(min(w, h))
+
+    def get_plate_size():
+        # Plates-urile vor fi 60% din dimensiunea celulei board-ului, dar nu mai mari decât 18% din înălțime
+        cell_size = get_cell_size()
+        return int(min(cell_size * 0.9, page.height * 0.18))
+
     game = CakeSortGame()
     selected_plate_index = [0]
     score_text = ft.Text(f"Score: {game.score}", size=18)
@@ -77,27 +95,30 @@ def main(page: ft.Page):
         return lambda e: select_plate(idx)
 
     def update_board():
+        board_column.height = int(page.height * BOARD_HEIGHT_RATIO)
         board_column.controls.clear()
+        cell_size = get_cell_size()
         for r in range(ROWS):
             row_controls = []
             for c in range(COLS):
                 plate_number = game.board.get_plate_number(r, c)
                 if plate_number:
                     plate = game.placed_plates[plate_number]
-                    label = draw_plate_flet(plate, size=100)  
+                    label = draw_plate_flet(plate, size=cell_size)  # <-- aici
                 else:
-                    label = ft.Container(width=120, height=120, bgcolor="#eee", border_radius=60)
+                    label = ft.Container(width=cell_size, height=cell_size, bgcolor="#eee", border_radius=cell_size//2)
                 cell = ft.Container(
                     content=label,
-                    width=120,
-                    height=120,
+                    width=cell_size,
+                    height=cell_size,
                     border=ft.border.all(2, "black"),
                     alignment=ft.alignment.center,
-                    on_click=make_place_plate(r, c)
+                    on_click=make_place_plate(r, c),
+                    margin=CELL_MARGIN//2
                 )
                 board_cells[r][c] = cell
                 row_controls.append(cell)
-            board_column.controls.append(ft.Row(row_controls))
+            board_column.controls.append(ft.Row(row_controls, spacing=0))
         score_text.value = f"Score: {game.score}"
         page.update()
 
@@ -107,14 +128,16 @@ def main(page: ft.Page):
     def update_plates():
         plates_row.controls.clear()
         plate_cells.clear()
+        plate_size = get_plate_size()
         for idx, plate in enumerate(game.current_plates):
             cell = ft.Container(
-                content=draw_plate_flet(plate, size=100),
-                width=94,
-                height=94,
+                content=draw_plate_flet(plate, size=plate_size),  # <-- aici
+                width=plate_size,
+                height=plate_size,
                 border=ft.border.all(3, "blue" if idx == selected_plate_index[0] else "grey"),
                 alignment=ft.alignment.center,
-                on_click=make_select_plate(idx)
+                on_click=make_select_plate(idx),
+                margin=CELL_MARGIN//2
             )
             plate_cells.append(cell)
             plates_row.controls.append(cell)
@@ -209,10 +232,8 @@ def main(page: ft.Page):
         update_plates()
         page.add(
             ft.Column([
-                ft.Text("CakeSort Board", size=24),
                 score_text,
                 board_column,
-                ft.Text("Plates available:", size=18),
                 plates_row
             ])
         )
@@ -224,14 +245,23 @@ def main(page: ft.Page):
         game.current_plates.append(Plate.generate_plate())
 
     overlay = ft.Stack([
-        ft.Column([
-            ft.Text("CakeSort Board", size=24),
-            score_text,
-            board_column,
-            ft.Text("Plates available:", size=18),
-            plates_row
-        ]),
+        ft.Row([
+            ft.Column([
+                score_text,
+                board_column,
+                ft.Container(height=page.height * 0.05),  # spațiu vertical între board și plates_row
+                plates_row
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER
+            ),
+        ], alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.CENTER)
     ])
     page.add(overlay)
+
+    def on_resize(e):
+        update_board()
+        update_plates()
+    page.on_resize = on_resize
 
 ft.app(target=main)
