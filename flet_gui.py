@@ -149,20 +149,28 @@ def main(page: ft.Page):
 
     async def animate_slice_move(src_widget, dst_widget, slice_type):
         def get_cell_pos(widget):
+            # Pentru board
             for r in range(ROWS):
                 for c in range(COLS):
                     if board_cells[r][c] is widget:
-                        return (c * 120 + 60, 60 + r * 120 + 60)
+                        return get_board_cell_position(r, c)
+            # Pentru plates jos
             for i, cell in enumerate(plate_cells):
                 if cell is widget:
-                    return (i * 94 + 47, 60 + ROWS * 120 + 40 + 47)
-            return (0, 0)  
+                    plate_size = get_plate_size()
+                    plates_row_width = len(plate_cells) * plate_size + (len(plate_cells) + 1) * CELL_MARGIN
+                    offset_x = (page.width - plates_row_width) // 2 + CELL_MARGIN + i * (plate_size + CELL_MARGIN)
+                    # Calculează offset_y pentru plates_row
+                    board_height = ROWS * get_cell_size() + (ROWS + 1) * CELL_MARGIN
+                    offset_y = (page.height - board_height) // 2 + board_height + int(page.height * 0.05) + CELL_MARGIN
+                    return offset_x, offset_y
+            return (0, 0)
 
         src_left, src_top = get_cell_pos(src_widget)
         dst_left, dst_top = get_cell_pos(dst_widget)
 
-        img = draw_plate_flet(Plate(np.array([slice_type])), size=60)
-        anim = ft.Container(content=img, left=src_left, top=src_top, width=60, height=60)
+        img = draw_plate_flet(Plate(np.array([slice_type])), size=get_cell_size())
+        anim = ft.Container(content=img, left=src_left, top=src_top, width=get_cell_size(), height=get_cell_size())
         overlay.controls.append(anim)
         page.update()
 
@@ -263,5 +271,13 @@ def main(page: ft.Page):
         update_board()
         update_plates()
     page.on_resize = on_resize
+
+    def get_board_cell_position(row, col):
+        cell_size = get_cell_size()
+        board_width = COLS * cell_size + (COLS + 1) * CELL_MARGIN
+        board_height = ROWS * cell_size + (ROWS + 1) * CELL_MARGIN
+        offset_x = (page.width - board_width) // 2 + CELL_MARGIN + col * (cell_size + CELL_MARGIN)-20
+        offset_y = (page.height * 0.078) + CELL_MARGIN + row * (cell_size + CELL_MARGIN) 
+        return offset_x, offset_y
 
 ft.app(target=main)
