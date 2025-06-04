@@ -101,7 +101,18 @@ class CakeSortGame:
                     neighbor,plate,neighbor_row,neighbor_column,row,column,
                     slice_type,moves
                 )
+            elif neighbor.slices_types == plate.slices_types == 2:
+                CakeSortGame.__interchange_plates(
+                    plate,neighbor,row,column,neighbor_row,neighbor_column,
+                    slice_type,moves
+                )
+                slice_type = neighbor & plate
+                CakeSortGame.__interchange_plates(
+                    neighbor,plate,neighbor_row,neighbor_column,row,column,
+                    slice_type,moves
+                )
             else:
+                print(2)
                 CakeSortGame.__interchange_plates(
                     plate,neighbor,row,column,neighbor_row,neighbor_column,
                     slice_type,moves
@@ -121,7 +132,6 @@ class CakeSortGame:
         moves
     ):
         count = min(plate1.empty_spaces,plate2.count_slice(slice_type))
-
 
         plate2.remove_slices(slice_type,count)
         plate1.add_slices(slice_type,count)
