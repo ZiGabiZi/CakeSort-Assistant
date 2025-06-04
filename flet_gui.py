@@ -68,14 +68,13 @@ def main(page: ft.Page):
     except Exception as ex:
         print("Eroare la ștergerea fișierelor temp la pornire:", ex)
 
-    page.window_on_close = True  # Activează evenimentul de închidere fereastră
+    page.window_on_close = True 
     page.window_full_screen = True
     page.window_frameless = True
 
     CELL_MARGIN = 10
 
     def get_cell_size():
-        # Calculează dimensiunea maximă pentru celule, ținând cont de ROWS, COLS și margin
         w = (page.width - (COLS + 1) * CELL_MARGIN) // COLS
         h = (page.height * BOARD_HEIGHT_RATIO - (ROWS + 1) * CELL_MARGIN) // ROWS
         return int(min(w, h))
@@ -116,7 +115,7 @@ def main(page: ft.Page):
                 plate_number = game.board.get_plate_number(r, c)
                 if plate_number:
                     plate = game.placed_plates[plate_number]
-                    label = draw_plate_flet(plate, size=cell_size)  # <-- aici
+                    label = draw_plate_flet(plate, size=cell_size)  
                 else:
                     label = ft.Container(width=cell_size, height=cell_size, bgcolor="#eee", border_radius=cell_size//2)
                 cell = ft.Container(
@@ -143,7 +142,7 @@ def main(page: ft.Page):
         plate_size = get_plate_size()
         for idx, plate in enumerate(game.current_plates):
             cell = ft.Container(
-                content=draw_plate_flet(plate, size=plate_size),  # <-- aici
+                content=draw_plate_flet(plate, size=plate_size),  
                 width=plate_size,
                 height=plate_size,
                 border=ft.border.all(3, "blue" if idx == selected_plate_index[0] else "grey"),
@@ -161,18 +160,15 @@ def main(page: ft.Page):
 
     async def animate_slice_move(src_widget, dst_widget, slice_type):
         def get_cell_pos(widget):
-            # Pentru board
             for r in range(ROWS):
                 for c in range(COLS):
                     if board_cells[r][c] is widget:
                         return get_board_cell_position(r, c)
-            # Pentru plates jos
             for i, cell in enumerate(plate_cells):
                 if cell is widget:
                     plate_size = get_plate_size()
                     plates_row_width = len(plate_cells) * plate_size + (len(plate_cells) + 1) * CELL_MARGIN
                     offset_x = (page.width - plates_row_width) // 2 + CELL_MARGIN + i * (plate_size + CELL_MARGIN)
-                    # Calculează offset_y pentru plates_row
                     board_height = ROWS * get_cell_size() + (ROWS + 1) * CELL_MARGIN
                     offset_y = (page.height - board_height) // 2 + board_height + int(page.height * 0.05) + CELL_MARGIN
                     return offset_x, offset_y
@@ -293,9 +289,29 @@ def main(page: ft.Page):
             initial_directory=temp_dir
         )
 
+    def get_last_autosave_file():
+        files = [f for f in os.listdir(temp_dir) if f.startswith("autosave_") and f.endswith(".pkl")]
+        if not files:
+            return None
+        files.sort(key=lambda x: int(x.split("_")[1].split(".")[0]))
+        return os.path.join(temp_dir, files[-2]) if len(files) > 1 else os.path.join(temp_dir, files[-1])
+
+    def undo_game(e):
+        last_file = get_last_autosave_file()
+        if last_file and os.path.exists(last_file):
+            try:
+                with open(last_file, "rb") as f:
+                    loaded_game = pickle.load(f)
+                    game.__dict__.update(loaded_game.__dict__)
+                    update_board()
+                    update_plates()
+            except Exception as ex:
+                print("Eroare la undo:", ex)
+    
     save_button = ft.ElevatedButton("Save", on_click=save_game)
     load_button = ft.ElevatedButton("Load", on_click=load_game)
-    score_row = ft.Row([save_button, load_button, score_text], alignment=ft.MainAxisAlignment.START)
+    undo_button = ft.ElevatedButton("Undo", on_click=undo_game)
+    score_row = ft.Row([save_button, load_button, undo_button, score_text], alignment=ft.MainAxisAlignment.START)
 
     update_board()
     update_plates()
@@ -342,18 +358,6 @@ def main(page: ft.Page):
             pickle.dump(game, f)
         autosave_counter[0] += 1
 
-    def cleanup_temp_files(e=None):
-        try:
-            print("Șterg fișierele din temp...")  # DEBUG, vezi dacă se apelează
-            for fname in os.listdir(temp_dir):
-                fpath = os.path.join(temp_dir, fname)
-                if os.path.isfile(fpath):
-                    os.remove(fpath)
-        except Exception as ex:
-            print("Eroare la ștergerea fișierelor temp:", ex)
-
-    # Asigură-te că handlerul e setat pe ambele evenimente
-    page.on_window_event = lambda e: cleanup_temp_files() if e.data == "close" else None
-    page.window_destroy = cleanup_temp_files
+    
 
 ft.app(target=main)
