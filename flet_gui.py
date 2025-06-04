@@ -9,6 +9,8 @@ from constants import ROWS, COLS
 from constants import MAX_SLICES_PER_PLATE, CAKE_TYPE_COLORS
 import asyncio
 import numpy as np
+import os
+import shutil
 
 TEXTURE_FILES = [
     "textures/cereals.jpg",
@@ -56,6 +58,17 @@ def draw_plate_flet(plate, size=60):
 BOARD_HEIGHT_RATIO = 0.7
 
 def main(page: ft.Page):
+    temp_dir = os.path.join(os.path.dirname(__file__), "temp")
+    os.makedirs(temp_dir, exist_ok=True)
+    try:
+        for fname in os.listdir(temp_dir):
+            fpath = os.path.join(temp_dir, fname)
+            if os.path.isfile(fpath):
+                os.remove(fpath)
+    except Exception as ex:
+        print("Eroare la ștergerea fișierelor temp la pornire:", ex)
+
+    page.window_on_close = True  # Activează evenimentul de închidere fereastră
     page.window_full_screen = True
     page.window_frameless = True
 
@@ -68,7 +81,6 @@ def main(page: ft.Page):
         return int(min(w, h))
 
     def get_plate_size():
-        # Plates-urile vor fi 60% din dimensiunea celulei board-ului, dar nu mai mari decât 18% din înălțime
         cell_size = get_cell_size()
         return int(min(cell_size * 0.9, page.height * 0.18))
 
@@ -219,6 +231,7 @@ def main(page: ft.Page):
             selected_plate_index[0] = min(selected_plate_index[0], len(game.current_plates) - 1)
         update_board()
         update_plates()
+        autosave_game()  
         if is_board_full() and len(game.current_plates) > 0:
             show_game_over()
 
@@ -254,15 +267,31 @@ def main(page: ft.Page):
         with open("cakesort_save.pkl", "wb") as f:
             pickle.dump(game, f)
 
-    def load_game(e):
+    file_picker = ft.FilePicker()
+    page.overlay.append(file_picker)
+
+    def load_game_from_path(path):
         try:
-            with open("cakesort_save.pkl", "rb") as f:
+            with open(path, "rb") as f:
                 loaded_game = pickle.load(f)
                 game.__dict__.update(loaded_game.__dict__)
                 update_board()
                 update_plates()
         except Exception as ex:
             print("Eroare la load:", ex)
+
+    def on_file_picked(e: ft.FilePickerResultEvent):
+        if e.files and len(e.files) > 0:
+            load_game_from_path(e.files[0].path)
+
+    file_picker.on_result = on_file_picked
+
+    def load_game(e):
+        file_picker.pick_files(
+            dialog_title="Alege fișierul de autosave",
+            allowed_extensions=["pkl"],
+            initial_directory=temp_dir
+        )
 
     save_button = ft.ElevatedButton("Save", on_click=save_game)
     load_button = ft.ElevatedButton("Load", on_click=load_game)
@@ -301,5 +330,30 @@ def main(page: ft.Page):
         offset_x = (page.width - board_width) // 2 + CELL_MARGIN + col * (cell_size + CELL_MARGIN)-20
         offset_y = (page.height * 0.078) + CELL_MARGIN + row * (cell_size + CELL_MARGIN) 
         return offset_x, offset_y
+
+    autosave_counter = [1]  
+
+    temp_dir = os.path.join(os.path.dirname(__file__), "temp")
+    os.makedirs(temp_dir, exist_ok=True)
+
+    def autosave_game():
+        filename = os.path.join(temp_dir, f"autosave_{autosave_counter[0]}.pkl")
+        with open(filename, "wb") as f:
+            pickle.dump(game, f)
+        autosave_counter[0] += 1
+
+    def cleanup_temp_files(e=None):
+        try:
+            print("Șterg fișierele din temp...")  # DEBUG, vezi dacă se apelează
+            for fname in os.listdir(temp_dir):
+                fpath = os.path.join(temp_dir, fname)
+                if os.path.isfile(fpath):
+                    os.remove(fpath)
+        except Exception as ex:
+            print("Eroare la ștergerea fișierelor temp:", ex)
+
+    # Asigură-te că handlerul e setat pe ambele evenimente
+    page.on_window_event = lambda e: cleanup_temp_files() if e.data == "close" else None
+    page.window_destroy = cleanup_temp_files
 
 ft.app(target=main)
