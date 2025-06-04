@@ -22,16 +22,16 @@ class Board:
         return self.grid[row][column]
 
     def remove_plate(self, row, col):
-        self.grid[row][col] = Plate(np.array([]))  # sau None, dacă folosești None pentru slot gol
+        self.grid[row][col] = Plate(np.array([]))
         self.plate_number_map[row, col] = 0
     
     @staticmethod
     def get_neighbors_indexes(row: int, column: int) -> list[tuple[int,int]]:
         neighbors = []
-        if row > 0:
-            neighbors.append((row - 1, column))
         if row < ROWS - 1:
             neighbors.append((row + 1, column))
+        if row > 0:
+            neighbors.append((row - 1, column))
         if column > 0:
             neighbors.append((row, column - 1))
         if column < COLS - 1:

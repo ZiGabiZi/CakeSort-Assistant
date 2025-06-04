@@ -1,4 +1,5 @@
 from itertools import product
+from collections import defaultdict
 
 import numpy as np
 
@@ -53,13 +54,51 @@ class CakeSortGame:
     def __process_new_plate(self, row, column, plate_number):
         plate = self.board.get_plate(row, column)
         moves = []
-        for neighbor_row, neighbor_column in self.board.get_neighbors_indexes(row,column):
-            neighbor = self.board.get_plate(neighbor_row,neighbor_column)
-            slice_type = neighbor & plate
-            if not slice_type:
+        neighbors = [
+            (
+                neighbor,
+                neighbor & plate,
+                neighbor_row,
+                neighbor_column
+            )
+                for neighbor_row,neighbor_column in self.board.get_neighbors_indexes(row,column)
+                    if (neighbor:=self.board.get_plate(neighbor_row,neighbor_column)) & plate
+        ]
+
+        grouped = defaultdict(list)
+        for neighbor,intersection,neighbor_row,neighbor_column in neighbors:
+            grouped[intersection].append((neighbor,neighbor_row,neighbor_column))
+
+        print(grouped)
+        for slice_type,group in grouped.items():
+            if len(group) > 1:
+                if all(map(lambda x: x[0].slices_types == 1,group)) and plate.slices_types == 1:
+                    for neighbor,neighbor_row,neighbor_column in group:
+                        count = min(plate.empty_spaces,neighbor.count_slice(slice_type))
+                        neighbor.remove_slices(slice_type,count)
+                        plate.add_slices(slice_type,count)
+                        moves.append(create_move(
+                            neighbor_row,neighbor_column,row,column,slice_type,count
+                        ))
+                else:
+                    selected_plate,selected_row,selected_column = group.pop()
+                    for neighbor,neighbor_row,neighbor_column in group:
+                        count = min(plate.empty_spaces,neighbor.count_slice(slice_type))
+                        neighbor.remove_slices(slice_type,count)
+                        plate.add_slices(slice_type,count)
+                        moves.append(create_move(
+                            neighbor_row,neighbor_column,row,column,slice_type,count
+                        ))
+
+                    count = min(selected_plate.empty_spaces,plate.count_slice(slice_type))
+                    selected_plate.add_slices(slice_type,count)
+                    plate.remove_slices(slice_type,count)
+                    moves.append(create_move(
+                        row,column,selected_row,selected_column,slice_type,count
+                    ))
+
                 continue
-            else:
-                print(slice_type)
+
             if neighbor.slices_types == 1 and plate.slices_types != 1:
                 count = min(neighbor.empty_spaces,plate.count_slice(slice_type))
                 neighbor.add_slices(slice_type,count)
@@ -67,7 +106,6 @@ class CakeSortGame:
                 moves.append(create_move(
                     row,column,neighbor_row,neighbor_column,slice_type,count
                 ))
-                
             else:
                 count = min(plate.empty_spaces,neighbor.count_slice(slice_type))
                 neighbor.remove_slices(slice_type,count)

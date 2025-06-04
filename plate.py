@@ -49,7 +49,7 @@ class Plate:
         common = np.intersect1d(self.slices, other.slices, assume_unique=False)
         return common[0] if common.size > 0 else None
 
-    def __str__(self):
+    def __repr__(self):
         return "".join(map(lambda x: str(int(x)),self.slices))
     
     @staticmethod
