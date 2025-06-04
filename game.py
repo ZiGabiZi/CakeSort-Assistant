@@ -70,48 +70,61 @@ class CakeSortGame:
             grouped[intersection].append((neighbor,neighbor_row,neighbor_column))
 
         print(grouped)
+
         for slice_type,group in grouped.items():
             if len(group) > 1:
                 if all(map(lambda x: x[0].slices_types == 1,group)) and plate.slices_types == 1:
                     for neighbor,neighbor_row,neighbor_column in group:
-                        count = min(plate.empty_spaces,neighbor.count_slice(slice_type))
-                        neighbor.remove_slices(slice_type,count)
-                        plate.add_slices(slice_type,count)
-                        moves.append(create_move(
-                            neighbor_row,neighbor_column,row,column,slice_type,count
-                        ))
+                        CakeSortGame.__interchange_plates(
+                            plate,neighbor,row,column,neighbor_row,neighbor_column,
+                            slice_type,moves
+                        )
                 else:
                     selected_plate,selected_row,selected_column = group.pop()
                     for neighbor,neighbor_row,neighbor_column in group:
-                        count = min(plate.empty_spaces,neighbor.count_slice(slice_type))
-                        neighbor.remove_slices(slice_type,count)
-                        plate.add_slices(slice_type,count)
-                        moves.append(create_move(
-                            neighbor_row,neighbor_column,row,column,slice_type,count
-                        ))
+                        CakeSortGame.__interchange_plates(
+                            plate,neighbor,row,column,neighbor_row,neighbor_column,
+                            slice_type,moves
+                        )
 
-                    count = min(selected_plate.empty_spaces,plate.count_slice(slice_type))
-                    selected_plate.add_slices(slice_type,count)
-                    plate.remove_slices(slice_type,count)
-                    moves.append(create_move(
-                        row,column,selected_row,selected_column,slice_type,count
-                    ))
+                    CakeSortGame.__interchange_plates(
+                        selected_plate,plate,selected_row,selected_column,row,column,
+                        slice_type,moves
+                    )
 
                 continue
 
+            neighbor,neighbor_row,neighbor_column = group.pop()
+            
             if neighbor.slices_types == 1 and plate.slices_types != 1:
-                count = min(neighbor.empty_spaces,plate.count_slice(slice_type))
-                neighbor.add_slices(slice_type,count)
-                plate.remove_slices(slice_type,count)
-                moves.append(create_move(
-                    row,column,neighbor_row,neighbor_column,slice_type,count
-                ))
+                CakeSortGame.__interchange_plates(
+                    neighbor,plate,neighbor_row,neighbor_column,row,column,
+                    slice_type,moves
+                )
             else:
-                count = min(plate.empty_spaces,neighbor.count_slice(slice_type))
-                neighbor.remove_slices(slice_type,count)
-                plate.add_slices(slice_type,count)
-                moves.append(create_move(
-                    neighbor_row,neighbor_column,row,column,slice_type,count
-                ))
+                CakeSortGame.__interchange_plates(
+                    plate,neighbor,row,column,neighbor_row,neighbor_column,
+                    slice_type,moves
+                )
 
         return moves
+    
+    @staticmethod
+    def __interchange_plates(
+        plate1,
+        plate2,
+        plate1_row,
+        plate1_column,
+        plate2_row,
+        plate2_column,
+        slice_type,
+        moves
+    ):
+        count = min(plate1.empty_spaces,plate2.count_slice(slice_type))
+
+
+        plate2.remove_slices(slice_type,count)
+        plate1.add_slices(slice_type,count)
+        moves.append(create_move(
+            plate2_row,plate2_column,plate1_row,plate1_column,slice_type,count
+        ))
