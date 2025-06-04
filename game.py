@@ -112,7 +112,6 @@ class CakeSortGame:
                     slice_type,moves
                 )
             else:
-                print(2)
                 CakeSortGame.__interchange_plates(
                     plate,neighbor,row,column,neighbor_row,neighbor_column,
                     slice_type,moves
