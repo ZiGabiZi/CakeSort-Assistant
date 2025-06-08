@@ -45,9 +45,9 @@ class Plate:
     def is_empty(self) -> bool:
         return len(self.slices) == 0
 
-    def __and__(self, other: Plate) -> int | None:
+    def __and__(self, other: Plate) -> np.ndarray | None:
         common = np.intersect1d(self.slices, other.slices, assume_unique=False)
-        return common[0] if common.size > 0 else None
+        return common if common.size > 0 else None
 
     def __repr__(self):
         return "".join(map(lambda x: str(int(x)),self.slices))

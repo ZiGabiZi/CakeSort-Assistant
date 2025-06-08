@@ -62,26 +62,35 @@ class CakeSortGame:
                 neighbor_column
             )
                 for neighbor_row,neighbor_column in self.board.get_neighbors_indexes(row,column)
-                    if (neighbor:=self.board.get_plate(neighbor_row,neighbor_column)) & plate
+                    if ((neighbor:=self.board.get_plate(neighbor_row,neighbor_column)) & plate) is not None
         ]
 
         grouped = defaultdict(list)
         for neighbor,intersection,neighbor_row,neighbor_column in neighbors:
-            grouped[intersection].append((neighbor,neighbor_row,neighbor_column))
+            for intersect in intersection:
+                print(type(intersect))
+                grouped[intersect].append((neighbor,neighbor_row,neighbor_column))
 
         print(grouped)
 
         for slice_type,group in grouped.items():
+            print(f"tipul {slice_type}")
             if len(group) > 1:
                 if all(map(lambda x: x[0].slices_types == 1,group)) and plate.slices_types == 1:
+                    print("A")
+                    # plate has a single type and all neighbors has the same type with the plate
                     for neighbor,neighbor_row,neighbor_column in group:
                         CakeSortGame.__interchange_plates(
                             plate,neighbor,row,column,neighbor_row,neighbor_column,
                             slice_type,moves
                         )
                 else:
-                    selected_plate,selected_row,selected_column = group.pop()
-                    for neighbor,neighbor_row,neighbor_column in group:
+                    print("B")
+                    # otherwise
+                    ordered_group = sorted(group,key=lambda x: x[0].count_slice(slice_type))
+                    selected_plate,selected_row,selected_column = ordered_group.pop()
+                    print(selected_row,selected_column)
+                    for neighbor,neighbor_row,neighbor_column in ordered_group:
                         CakeSortGame.__interchange_plates(
                             plate,neighbor,row,column,neighbor_row,neighbor_column,
                             slice_type,moves
@@ -92,26 +101,43 @@ class CakeSortGame:
                         slice_type,moves
                     )
 
+                    # in the case, remaining slices are not moved
+                    for neighbor,neighbor_row,neighbor_column in group:
+                        if neighbor.count_slice(slice_type) not in [0,6] and plate.count_slice(slice_type):
+                            CakeSortGame.__interchange_plates(
+                                plate,neighbor,row,column,neighbor_row,neighbor_column,
+                                slice_type,moves
+                            )
+                            CakeSortGame.__interchange_plates(
+                                selected_plate,plate,selected_row,selected_column,row,column,
+                                slice_type,moves
+                            )
+
                 continue
 
             neighbor,neighbor_row,neighbor_column = group.pop()
             
             if neighbor.slices_types == 1 and plate.slices_types != 1:
+                print(1)
+                # when plate has more types and neighbor just one, go to neighbor
                 CakeSortGame.__interchange_plates(
                     neighbor,plate,neighbor_row,neighbor_column,row,column,
                     slice_type,moves
                 )
             elif neighbor.slices_types == plate.slices_types == 2:
+                print(2,slice_type)
+                # when plate and neighbor shares exactly 2 types
                 CakeSortGame.__interchange_plates(
                     plate,neighbor,row,column,neighbor_row,neighbor_column,
                     slice_type,moves
                 )
-                slice_type = neighbor & plate
+                slice_type = [neighbor & plate][0]
                 CakeSortGame.__interchange_plates(
                     neighbor,plate,neighbor_row,neighbor_column,row,column,
                     slice_type,moves
                 )
             else:
+                print(3)
                 CakeSortGame.__interchange_plates(
                     plate,neighbor,row,column,neighbor_row,neighbor_column,
                     slice_type,moves
