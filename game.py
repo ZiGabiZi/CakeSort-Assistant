@@ -21,35 +21,35 @@ class CakeSortGame:
 
     def cleanup_empty_plates(self):
         cleared_positions = []
-        for row, column in product(range(ROWS),range(COLS)):
-            plate_number = self.board.get_plate_number(row, column)
+        for row,column in product(range(ROWS),range(COLS)):
+            plate_number = self.board.get_plate_number(row,column)
             if plate_number != 0:
                 plate = self.placed_plates[plate_number]
                 if plate.is_empty:
-                    self.board.remove_plate(row, column)
+                    self.board.remove_plate(row,column)
                     del self.placed_plates[plate_number]
-                    cleared_positions.append((row, column))
-                    print(f"Plate at ({row + 1}, {column + 1}) is empty and removed from board.")
+                    cleared_positions.append((row,column))
+                    print(f"Plate at ({row+1},{column+1}) is empty and removed from board.")
                 if plate.is_clearable:
-                    plate.slices = np.array([], dtype=int)
-                    self.board.remove_plate(row, column)
+                    plate.slices = np.array([],dtype=int)
+                    self.board.remove_plate(row,column)
                     del self.placed_plates[plate_number]
-                    self.score += 1
+                    self.score+=1
         return cleared_positions
 
-    def place_plate(self, plate_index, row_index, column_index):
-        if self.board.get_plate_number(row_index, column_index):
-            return False, []
+    def place_plate(self,plate_index,row_index,column_index):
+        if self.board.get_plate_number(row_index,column_index):
+            return []
 
         selected_plate = self.current_plates.pop(plate_index)
-        if not self.board.place_plate(row_index, column_index, self.plate_counter, selected_plate):
+        if not self.board.place_plate(row_index,column_index,self.plate_counter,selected_plate):
             self.current_plates.insert(plate_index, selected_plate)
-            return False, []
+            return []
 
         self.placed_plates[self.plate_counter] = selected_plate
-        moves = self.__process_new_plate(row_index, column_index, self.plate_counter)
-        self.plate_counter += 1
-        return True, moves
+        moves = self.__process_new_plate(row_index,column_index,self.plate_counter)
+        self.plate_counter+=1
+        return moves
 
     def __process_new_plate(self, row, column, plate_number):
         plate = self.board.get_plate(row, column)

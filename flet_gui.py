@@ -214,7 +214,7 @@ def main(page: ft.Page):
             return
         if game.board.get_plate_number(row, col) != 0:
             return
-        success, moves = game.place_plate(selected_plate_index[0], row, col)
+        moves = game.place_plate(selected_plate_index[0], row, col)
         print("Moves",*moves,sep="\n")
         if moves:
             asyncio.run(do_animations(moves))
@@ -227,7 +227,7 @@ def main(page: ft.Page):
             selected_plate_index[0] = min(selected_plate_index[0], len(game.current_plates) - 1)
         update_board()
         update_plates()
-        autosave_game()  
+        autosave_game()
         if is_board_full() and len(game.current_plates) > 0:
             show_game_over()
 
