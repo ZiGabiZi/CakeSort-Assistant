@@ -215,7 +215,7 @@ def main(page: ft.Page):
         if game.board.get_plate_number(row, col) != 0:
             return
         success, moves = game.place_plate(selected_plate_index[0], row, col)
-        print("Mutări efectuate:", moves)
+        print("Moves",*moves,sep="\n")
         if moves:
             asyncio.run(do_animations(moves))
         game.cleanup_empty_plates()

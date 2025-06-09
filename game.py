@@ -104,8 +104,10 @@ class CakeSortGame:
                     )
 
                     # in the case, remaining slices are not moved
-                    for neighbor,neighbor_row,neighbor_column in group:
+                    for neighbor,neighbor_row,neighbor_column in ordered_group:
                         if neighbor.count_slice(slice_type) not in [0,6] and plate.count_slice(slice_type):
+                            if selected_plate.is_clearable:
+                                selected_plate,selected_row,selected_column = ordered_group.pop()
                             CakeSortGame.__interchange_plates(
                                 plate,neighbor,row,column,neighbor_row,neighbor_column,
                                 slice_type,moves
