@@ -7,6 +7,7 @@ from utils import *
 from constants import *
 from plate import Plate
 from board import Board
+from env import Env
 
 class CakeSortGame:
     def __init__(self):
@@ -47,11 +48,11 @@ class CakeSortGame:
             return []
 
         self.placed_plates[self.plate_counter] = selected_plate
-        moves = self.__process_new_plate(row_index,column_index,self.plate_counter)
+        moves = self.__process_new_plate(row_index,column_index)
         self.plate_counter+=1
         return moves
 
-    def __process_new_plate(self, row, column, plate_number):
+    def __process_new_plate(self, row, column):
         plate = self.board.get_plate(row, column)
         moves = []
         neighbors = [
@@ -81,7 +82,6 @@ class CakeSortGame:
                     # plate has a single type and all neighbors shares the same type with the plate
                     print("Case 0x111")
                     for neighbor,neighbor_row,neighbor_column in group:
-                        print(neighbor)
                         CakeSortGame.__interchange_plates(
                             plate,neighbor,row,column,neighbor_row,neighbor_column,
                             slice_type,moves

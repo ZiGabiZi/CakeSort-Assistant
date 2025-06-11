@@ -3,6 +3,7 @@ import io
 import base64
 from PIL import Image, ImageDraw
 import flet as ft
+from env import Env
 from game import CakeSortGame
 from plate import Plate  
 from constants import ROWS, COLS  
@@ -10,7 +11,7 @@ from constants import MAX_SLICES_PER_PLATE, CAKE_TYPE_COLORS
 import asyncio
 import numpy as np
 import os
-import shutil
+from tensorflow.keras.models import load_model
 
 TEXTURE_FILES = [
     "textures/cereals.jpg",
@@ -62,6 +63,7 @@ BOARD_HEIGHT_RATIO = 0.7
 def main(page: ft.Page):
     temp_dir = os.path.join(os.path.dirname(__file__), "temp")
     os.makedirs(temp_dir, exist_ok=True)
+    model = load_model("cake_sort_model.h5")
     try:
         for fname in os.listdir(temp_dir):
             fpath = os.path.join(temp_dir, fname)
@@ -92,7 +94,14 @@ def main(page: ft.Page):
     autosave_counter = [1]  
 
     def autosave_game():
-        print("Ma gandesc la ....")
+        for i in range(len(game.current_plates)):
+            print(f"Plate{i}")
+            env = Env(game)
+            env.set_plate_index(i)
+            action = np.argmax((model.predict(env.get_state()[np.newaxis], verbose=0)[0]))
+            score = np.max((model.predict(env.get_state()[np.newaxis], verbose=0)[0]))
+            row,column = divmod(action,COLS)
+            print(f"{row=},{column=},{score=}")
         filename = os.path.join(temp_dir, f"autosave_{autosave_counter[0]}.pkl")
         with open(filename, "wb") as f:
             pickle.dump(game, f)
