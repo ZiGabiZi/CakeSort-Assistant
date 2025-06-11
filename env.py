@@ -23,7 +23,7 @@ class Env:
         row,column = divmod(action,COLS)
         
         if self.game.board.get_plate_number(row,column):
-            return self.get_state(),-10,True
+            return self.get_state(),-10 if self.get_empty_spaces() else 0,True
   
         self.game.place_plate(self.plate_index,row,column)
         self.game.cleanup_empty_plates()
@@ -43,3 +43,6 @@ class Env:
         state.append(list(plate.slices)+[0]*(MAX_SLICES_PER_PLATE-len(plate.slices)-1))
 
         return np.concatenate(state)
+    
+    def get_empty_spaces(self):
+        return sum(self.game.board.plate_number_map.flatten() == 0)

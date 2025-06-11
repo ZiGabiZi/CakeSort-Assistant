@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from collections import deque
+from statistics import *
 from constants import *
 from tensorflow.keras import models,layers,optimizers
 from env import Env
@@ -10,7 +11,7 @@ action_size = ROWS * COLS
 gamma = 0.95
 epsilon = 1.0
 epsilon_min = 0.1
-epsilon_decay = 0.995
+epsilon_decay = 0.99
 batch_size = 64
 episodes = 1000
 memory = deque(maxlen=20000)
@@ -23,6 +24,13 @@ model = models.Sequential([
 model.compile(loss="mse",optimizer=optimizers.Adam(learning_rate=0.01))
 
 env = Env()
+
+def stats(array):
+    print(
+        "Statistics:",
+        f"{len(array)=}",f"{max(array)=}",f"{mean(array)=}",f"{median(array)=}",
+        sep="\n"
+    )
 
 def act(state, epsilon):
     q_values = model.predict(state[np.newaxis], verbose=0)[0]
@@ -46,6 +54,7 @@ def act(state, epsilon):
     return np.argmax(masked_q)
 
 file = open("training.txt","a")
+rewards = []
 
 for episode in range(episodes):
     state = env.reset()
@@ -72,10 +81,12 @@ for episode in range(episodes):
             for i, (s, a, r, s_next, d) in enumerate(minibatch):
                 targets[i][a] = r if d else r + gamma * np.max(targets_next[i])
 
-            model.fit(states, targets, epochs=1, verbose=0)
+            model.fit(states,targets,epochs=1,verbose=0)
 
     epsilon = max(epsilon_min,epsilon*epsilon_decay)
-    print(f"Episode {episode+1}, Total reward: {total_reward}, Epsilon: {epsilon:.3f}")
+    rewards.append(total_reward)
+    print(f"Episode {episode+1}, Total reward: {total_reward}, Epsilon: {epsilon:.3f}\n")
+    print(stats(rewards))
     file.write(f"Episode {episode+1}, Total reward: {total_reward}, Epsilon: {epsilon:.3f}\n")
 
 file.close()

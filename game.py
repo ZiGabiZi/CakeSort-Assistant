@@ -73,7 +73,7 @@ class CakeSortGame:
         for neighbor,intersection,neighbor_row,neighbor_column in neighbors:
             for intersect in intersection:
                 grouped[intersect].append((neighbor,neighbor_row,neighbor_column))
-        print(grouped)
+        # print(grouped)
 
         for slice_type,group in grouped.items():
             print(f"{slice_type=}")
