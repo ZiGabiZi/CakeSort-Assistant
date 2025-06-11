@@ -12,7 +12,7 @@ epsilon = 1.0
 epsilon_min = 0.1
 epsilon_decay = 0.995
 batch_size = 64
-episodes = 2000
+episodes = 1000
 memory = deque(maxlen=20000)
 
 model = models.Sequential([
@@ -20,16 +20,30 @@ model = models.Sequential([
     layers.Dense(256,activation="relu"),
     layers.Dense(action_size,activation="linear")
 ])
-model.compile(loss="mse",optimizer=optimizers.Adam(learning_rate=0.001))
+model.compile(loss="mse",optimizer=optimizers.Adam(learning_rate=0.01))
 
 env = Env()
 
-def act(state,epsilon):
-    if np.random.rand() <= epsilon:
+def act(state, epsilon):
+    q_values = model.predict(state[np.newaxis], verbose=0)[0]
+
+    valid_actions = []
+    for action in range(action_size):
+        row, col = divmod(action, COLS)
+        if not env.game.board.get_plate_number(row, col):
+            valid_actions.append(action)
+
+    if not valid_actions:
         return random.randrange(action_size)
 
-    q_values = model.predict(state[np.newaxis],verbose=0)[0]
-    return np.argmax(q_values)
+    if np.random.rand() <= epsilon:
+        return random.choice(valid_actions)
+
+    masked_q = np.full_like(q_values, -np.inf)
+    for a in valid_actions:
+        masked_q[a] = q_values[a]
+
+    return np.argmax(masked_q)
 
 file = open("training.txt","a")
 
