@@ -22,6 +22,8 @@ TEXTURE_FILES = [
 ]
 TEXTURES = [Image.open(fname).convert("RGBA") for fname in TEXTURE_FILES]
 
+
+
 def draw_plate_flet(plate, size=60):
     n = len(plate.slices)
     img = Image.new("RGBA", (size, size), (255, 255, 255, 0))
@@ -84,6 +86,22 @@ def main(page: ft.Page):
         return int(min(cell_size * 0.9, page.height * 0.18))
 
     game = CakeSortGame()
+    while len(game.current_plates) < 3:
+        game.current_plates.append(Plate.generate_plate())
+
+    autosave_counter = [1]  
+
+    def autosave_game():
+        print("Ma gandesc la ....")
+        filename = os.path.join(temp_dir, f"autosave_{autosave_counter[0]}.pkl")
+        with open(filename, "wb") as f:
+            pickle.dump(game, f)
+        autosave_counter[0] += 1
+
+    # Autosave la începutul jocului
+    autosave_game()
+    print("Initial game state saved.")  # Mesaj opțional pentru claritate
+
     selected_plate_index = [0]
     score_text = ft.Text(f"Score: {game.score}", size=18)
     board_column = ft.Column()
@@ -205,6 +223,7 @@ def main(page: ft.Page):
                 await animate_slice_move(src_widget, dst_widget, move["slice_type"])
 
     def place_plate(row, col):
+        
         if not game.current_plates:
             return
         if selected_plate_index[0] >= len(game.current_plates):
@@ -212,10 +231,11 @@ def main(page: ft.Page):
         if is_board_full():
             show_game_over()
             return
+        
         if game.board.get_plate_number(row, col) != 0:
             return
+
         moves = game.place_plate(selected_plate_index[0], row, col)
-        print("Moves",*moves,sep="\n")
         if moves:
             asyncio.run(do_animations(moves))
         game.cleanup_empty_plates()
@@ -347,16 +367,11 @@ def main(page: ft.Page):
         offset_y = (page.height * 0.078) + CELL_MARGIN + row * (cell_size + CELL_MARGIN) 
         return offset_x, offset_y
 
-    autosave_counter = [1]  
 
     temp_dir = os.path.join(os.path.dirname(__file__), "temp")
     os.makedirs(temp_dir, exist_ok=True)
 
-    def autosave_game():
-        filename = os.path.join(temp_dir, f"autosave_{autosave_counter[0]}.pkl")
-        with open(filename, "wb") as f:
-            pickle.dump(game, f)
-        autosave_counter[0] += 1
+    
 
     
 
