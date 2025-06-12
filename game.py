@@ -7,7 +7,6 @@ from utils import *
 from constants import *
 from plate import Plate
 from board import Board
-from env import Env
 
 class CakeSortGame:
     def __init__(self):
@@ -16,6 +15,7 @@ class CakeSortGame:
         self.score = 0
         self.plate_counter = 1
         self.placed_plates = {}
+        self.interacted_slices = 0
 
     def reset_plates(self):
         self.current_plates = [Plate.generate_plate() for _ in range(3)]
@@ -82,7 +82,7 @@ class CakeSortGame:
                     # plate has a single type and all neighbors shares the same type with the plate
                     print("Case 0x111")
                     for neighbor,neighbor_row,neighbor_column in group:
-                        CakeSortGame.__interchange_plates(
+                        self.__interchange_plates(
                             plate,neighbor,row,column,neighbor_row,neighbor_column,
                             slice_type,moves
                         )
@@ -97,12 +97,12 @@ class CakeSortGame:
                     print(f"{selected_row=}\n{selected_column=}")
 
                     for neighbor,neighbor_row,neighbor_column in ordered_group:
-                        CakeSortGame.__interchange_plates(
+                        self.__interchange_plates(
                             plate,neighbor,row,column,neighbor_row,neighbor_column,
                             slice_type,moves
                         )
 
-                    CakeSortGame.__interchange_plates(
+                    self.__interchange_plates(
                         selected_plate,plate,selected_row,selected_column,row,column,
                         slice_type,moves
                     )
@@ -113,11 +113,11 @@ class CakeSortGame:
                             print("Subcase")
                             if selected_plate.is_clearable:
                                 selected_plate,selected_row,selected_column = ordered_group.pop()
-                            CakeSortGame.__interchange_plates(
+                            self.__interchange_plates(
                                 plate,neighbor,row,column,neighbor_row,neighbor_column,
                                 slice_type,moves
                             )
-                            CakeSortGame.__interchange_plates(
+                            self.__interchange_plates(
                                 selected_plate,plate,selected_row,selected_column,row,column,
                                 slice_type,moves
                             )
@@ -129,7 +129,7 @@ class CakeSortGame:
             if neighbor.slices_types == 1 and plate.slices_types != 1:
                 print("Case 0x21")
                 # when plate has more types and neighbor just one, go to neighbor
-                CakeSortGame.__interchange_plates(
+                self.__interchange_plates(
                     neighbor,plate,neighbor_row,neighbor_column,row,column,
                     slice_type,moves
                 )
@@ -140,27 +140,27 @@ class CakeSortGame:
                 # when plate and neighbor shares exactly same 2 types, interchange the slices
                 print("Case 0x22")
 
-                CakeSortGame.__interchange_plates(
+                self.__interchange_plates(
                     plate,neighbor,row,column,neighbor_row,neighbor_column,
                     slice_type,moves
                 )
                 slice_type = (neighbor & plate)[0]
-                CakeSortGame.__interchange_plates(
+                self.__interchange_plates(
                     neighbor,plate,neighbor_row,neighbor_column,row,column,
                     slice_type,moves
                 )
             else:
                 # when plate shares a type with a neighbor, go to plate
                 print("Case 0x11")
-                CakeSortGame.__interchange_plates(
+                self.__interchange_plates(
                     plate,neighbor,row,column,neighbor_row,neighbor_column,
                     slice_type,moves
                 )
 
         return moves
 
-    @staticmethod
     def __interchange_plates(
+        self,
         plate1,
         plate2,
         plate1_row,
@@ -171,8 +171,12 @@ class CakeSortGame:
         moves
     ):
         count = min(plate1.empty_spaces,plate2.count_slice(slice_type))
+        if not count:
+            return
+
         plate2.remove_slices(slice_type,count)
         plate1.add_slices(slice_type,count)
         moves.append(create_move(
             plate2_row,plate2_column,plate1_row,plate1_column,slice_type,count
         ))
+        self.interacted_slices+=count

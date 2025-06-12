@@ -20,15 +20,20 @@ class Env:
 
     def step(self,action):
         score = self.game.score
+        interacted_slices = self.game.interacted_slices
         row,column = divmod(action,COLS)
         
         if self.game.board.get_plate_number(row,column):
-            return self.get_state(),-10 if self.get_empty_spaces() else 0,True
+            return self.get_state(),-10 if self.get_empty_spaces() else 0,0,True
   
         self.game.place_plate(self.plate_index,row,column)
         self.game.cleanup_empty_plates()
         
-        return self.get_state(),self.game.score-score,False
+        return\
+            self.get_state(),\
+            self.game.score-score,\
+            0.1*(self.game.interacted_slices-interacted_slices),\
+            False
 
     def get_state(self):
         state = []

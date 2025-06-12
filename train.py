@@ -3,7 +3,8 @@ import random
 from collections import deque
 from statistics import *
 from constants import *
-from tensorflow.keras import models,layers,optimizers
+from tensorflow.keras.models import Model
+from tensorflow.keras import layers,optimizers,Input
 from env import Env
 
 state_size = ROWS * COLS * MAX_SLICES_PER_PLATE + MAX_SLICES_PER_PLATE - 1
@@ -11,17 +12,21 @@ action_size = ROWS * COLS
 gamma = 0.95
 epsilon = 1.0
 epsilon_min = 0.1
-epsilon_decay = 0.99
+epsilon_decay = 0.98
 batch_size = 64
 episodes = 1000
 memory = deque(maxlen=20000)
 
-model = models.Sequential([
-    layers.Input(shape=(state_size,)),
-    layers.Dense(256,activation="relu"),
-    layers.Dense(action_size,activation="linear")
-])
-model.compile(loss="mse",optimizer=optimizers.Adam(learning_rate=0.01))
+full_input = Input(shape=(125,))
+board_input = layers.Lambda(lambda x: x[:,:120])(full_input)
+plate_input = layers.Lambda(lambda x: x[:,120:])(full_input)
+conv_reshaped = layers.Reshape((5,4,6))(board_input)
+board_out = layers.Conv2D(32,(3,3),activation="relu",padding="same")(conv_reshaped)
+board_out = layers.Flatten()(board_out)
+concat = layers.Concatenate()([board_out,plate_input])
+output = layers.Dense(action_size,activation="linear")(concat)
+model = Model(inputs=full_input,outputs=output)
+model.compile(loss="mse",optimizer=optimizers.Adam(learning_rate=10e-5))
 
 env = Env()
 
@@ -59,13 +64,16 @@ rewards = []
 for episode in range(episodes):
     state = env.reset()
     total_reward = 0
+    total_score = 0
+    losses = []
 
     for step_num in range(200):
         action = act(state, epsilon)
-        next_state, reward, done = env.step(action)
-        total_reward += reward
+        next_state,score,bonus,done = env.step(action)
+        total_score+=score
+        total_reward+=score+bonus
 
-        memory.append((state, action, reward, next_state, done))
+        memory.append((state, action, score+bonus, next_state, done))
         state = next_state
 
         if done:
@@ -81,13 +89,17 @@ for episode in range(episodes):
             for i, (s, a, r, s_next, d) in enumerate(minibatch):
                 targets[i][a] = r if d else r + gamma * np.max(targets_next[i])
 
-            model.fit(states,targets,epochs=1,verbose=0)
+            history = model.fit(states, targets, epochs=1, verbose=0)
+            losses.append(history.history["loss"][0])
+    else:
+        print("HEI")
+        quit()
 
     epsilon = max(epsilon_min,epsilon*epsilon_decay)
-    rewards.append(total_reward)
-    print(f"Episode {episode+1}, Total reward: {total_reward}, Epsilon: {epsilon:.3f}\n")
-    print(stats(rewards))
-    file.write(f"Episode {episode+1}, Total reward: {total_reward}, Epsilon: {epsilon:.3f}\n")
+    rewards.append(total_score)
+    print(f"Episode {episode+1}, Total reward: {total_reward}, Mean loss: {mean(losses) if losses else float('-inf')}, Epsilon: {epsilon:.3f}")
+    stats(rewards)
+    file.write(f"Episode {episode+1}, Total reward: {total_reward}, Mean loss: {mean(losses) if losses else float('-inf')}, Epsilon: {epsilon:.3f}\n")
 
 file.close()
 print(f"Used memory: {len(memory)}")
